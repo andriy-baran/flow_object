@@ -1,6 +1,7 @@
-require "flow_object/version"
+require 'mature_factory'
+require 'flow_object/base'
+require 'flow_object/version'
 
 module FlowObject
   class Error < StandardError; end
-  # Your code goes here...
 end
