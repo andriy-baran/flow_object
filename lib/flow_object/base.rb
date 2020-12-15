@@ -85,12 +85,14 @@ module FlowObject
 
     def self.call(flow: :main)
       failure, previous_step, object = false, self.in, __fo_wrap_input__
-      cascade = public_send(:"build_#{flow}", previous_step, object) do
-        halt_if do |object, id|
-          previous_step = id.to_sym
-          failure = !object.valid?
-        end
-      end
+      plan    = public_send(:"build_#{flow}", previous_step, object)
+      cascade = plan.call do |object, id|
+                  previous_step = id.to_sym
+                  if !object.valid?
+                    failure = true
+                    throw :halt
+                  end
+                end
       __fo_resolve_cascade__(cascade, previous_step, failure)
     end
 

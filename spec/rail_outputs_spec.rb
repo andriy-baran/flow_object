@@ -128,7 +128,7 @@ RSpec.describe FlowObject::Base do
               end
             end
 
-            def on_authorize_failure
+            def on_authorize_stage_failure
               output.errors.join
             end
           end
