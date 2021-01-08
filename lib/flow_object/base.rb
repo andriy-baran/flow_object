@@ -16,7 +16,8 @@ module FlowObject
       @output = self.class.__fo_wrap_output__
     end
 
-    def inherited(subclass)
+    def self.inherited(subclass)
+      super
       subclass.from(self.in)
       subclass.to(self.out)
     end
