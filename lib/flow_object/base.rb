@@ -84,7 +84,7 @@ module FlowObject
     end
 
     def self.call(flow: :main)
-      failure, previous_step, object = false, self.in, __fo_wrap_input__
+      failure, previous_step, object = false, :"#{self.in}_input", __fo_wrap_input__
       plan    = public_send(:"build_#{flow}", previous_step, object)
       cascade = plan.call do |object, id|
                   previous_step = id.to_sym
