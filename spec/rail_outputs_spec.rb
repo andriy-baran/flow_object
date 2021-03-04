@@ -117,7 +117,7 @@ RSpec.describe FlowObject::Base do
             end
             json_output do
               attr_accessor :error, :step
-              def on_authorize_stage_failure(output)
+              def on_authorize_failure(output)
                 self.error = output.errors.join
                 self.step = :authorize_stage
               end
@@ -128,7 +128,7 @@ RSpec.describe FlowObject::Base do
               end
             end
 
-            def on_authorize_stage_failure
+            def on_authorize_failure
               output.errors.join
             end
           end
@@ -180,7 +180,7 @@ RSpec.describe FlowObject::Base do
             end
             json_output do
               attr_accessor :error, :step
-              def on_mash_input_failure(output)
+              def on_mash_failure(output)
                 self.error = output.errors.join
                 self.step = :mash_input
               end
@@ -191,7 +191,7 @@ RSpec.describe FlowObject::Base do
               end
             end
 
-            def on_authorize_stage_failure
+            def on_authorize_failure
               output.errors.join
             end
           end
