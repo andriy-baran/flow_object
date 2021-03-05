@@ -11,6 +11,9 @@ RSpec.describe FlowObject::Base do
             input :mash, base_class: Struct.new(:id), init: ->(klass, value) { klass.new(value) }
             output :rake, base_class: OpenStruct
             output :json, base_class: OpenStruct
+            def self.halt_flow?(object, id)
+              !object.valid?
+            end
             flow do
               stage :authorize
               stage :sync
@@ -94,6 +97,9 @@ RSpec.describe FlowObject::Base do
               stage :store
               stage :formatter
             end
+            def self.halt_flow?(object, id)
+              !object.valid?
+            end
             mash_input do
               def a; 'a'; end
               def valid?; true; end
@@ -156,6 +162,9 @@ RSpec.describe FlowObject::Base do
               stage :sync
               stage :store
               stage :formatter
+            end
+            def self.halt_flow?(object, id)
+              !object.valid?
             end
             mash_input do
               def a; 'a'; end

@@ -67,6 +67,9 @@ RSpec.describe FlowObject::Base do
               stage :formatter, base_class: Class.new(Object)
               output :json
             end
+            def self.halt_flow?(object, id)
+              !object.valid?
+            end
             mash_input do
               def a; 'a'; end
               def valid?; true; end

@@ -14,10 +14,34 @@ RSpec.describe FlowObject do
 
           flow do
             stage :authorize
+            stage :provide
+          end
+
+          provide_stage { attr_accessor :val }
+
+          rake_output do
+            attr_accessor :context
+          end
+
+          def on_sucess
+            output.context = given
           end
         end
       end
       value { { id: 3 } }
+    end
+
+    it 'has callbacks' do
+      i = 1
+      operation_class.after_input_initialize {|o| i += o.id }
+      operation_class.after_flow_initialize {|o| i += 3 }
+      operation_class.after_input_check {|o| i += 1 }
+      operation_class.after_flow_check {|o| o.val = i += 1 }
+      operation_class.after_output_initialize {|o| i += 4 }
+      child_class = Class.new(operation_class)
+      operation = child_class.accept(value).call
+      expect(i).to eq 13
+      expect(operation.given.val).to eq 9
     end
 
     it 'inherits proprties of superclass' do
