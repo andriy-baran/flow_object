@@ -61,16 +61,16 @@ module FlowObject
       end
 
       def __fo_process__(flow: :main)
-        failure, step_name = false, self.in
-        plan    = __fo_build_flow__(flow, step_name, __fo_wrap_input__)
+        failure, step_name, group = false, self.in, :input
+        plan    = __fo_build_flow__(flow, step_name, group, __fo_wrap_input__)
         cascade = __fo_run_flow__(plan,
                     proc{|_,id| step_name = id.title},
                     proc{ failure = true })
         [cascade, step_name, failure]
       end
 
-      def __fo_build_flow__(flow, step_name, object)
-        public_send(:"build_#{flow}", step_name, object)
+      def __fo_build_flow__(flow, step_name, group, object)
+        public_send(:"build_#{flow}", title: step_name, group: group, object: object)
       end
 
       def __fo_run_flow__(plan, on_step, on_failure)
