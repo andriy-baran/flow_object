@@ -3,18 +3,21 @@ module FlowObject
     include MatureFactory
     include MatureFactory::Features::Assemble
 
-    composed_of :stages, :inputs, :outputs
+    produces :stages, :inputs, :outputs
 
     class << self
+      extend Forwardable
       attr_reader :in, :out, :initial_values
+      def_delegators :callbacks, :after_input_initialize, :after_flow_initialize,
+        :after_input_check, :after_flow_check, :after_output_initialize
     end
 
-    attr_reader :output, :given
+    attr_reader :output, :flow
 
-    def initialize(given)
-      @given = given
+    def initialize(flow)
+      @flow = flow
       @output = self.class.send(:__fo_wrap_output__)
-      self.class.after_output_initialize.call(@output) if self.class.after_output_initialize
+      self.class.after_output_initialize.call(@output)
     end
 
     def on_failure(failed_step = nil)
@@ -37,6 +40,10 @@ module FlowObject
         subclass.after_output_initialize(&self.after_output_initialize)
       end
 
+      def callbacks
+        @callbacks ||= Callbacks.new
+      end
+
       def from(input)
         @in = input
         self
@@ -53,31 +60,11 @@ module FlowObject
       end
 
       def call(flow: :main)
-        __fo_resolve_cascade__(*__fo_process__(flow: flow))
+        __fo_resolve__(__fo_process__(flow: flow))
       end
 
       def flow(name = :main, &block)
         wrap(name, delegate: true, &block)
-      end
-
-      def after_input_initialize(&block)
-        block_given? ? @after_input_initialize = block : @after_input_initialize
-      end
-
-      def after_flow_initialize(&block)
-        block_given? ? @after_flow_initialize = block : @after_flow_initialize
-      end
-
-      def after_input_check(&block)
-        block_given? ? @after_input_check = block : @after_input_check
-      end
-
-      def after_flow_check(&block)
-        block_given? ? @after_flow_check = block : @after_flow_check
-      end
-
-      def after_output_initialize(&block)
-        block_given? ? @after_output_initialize = block : @after_output_initialize
       end
 
       private
@@ -87,34 +74,12 @@ module FlowObject
       end
 
       def __fo_process__(flow: :main)
-        failure, step_name, group = false, self.in, :input
-        plan    = __fo_build_flow__(flow, step_name, group, __fo_wrap_input__)
-        cascade = __fo_run_flow__(plan,
-                    proc{|_,id| step_name = id.title},
-                    proc{ failure = true },
-                    after_input_initialize,
-                    after_flow_initialize)
-        after_flow_check.call(cascade.public_send(step_name)) if after_flow_check
-        [cascade, step_name, failure]
+        plan    = __fo_build_flow__(flow, self.in, :input, __fo_wrap_input__)
+        Runner.new(plan, callbacks, method(:halt_flow?)).execute_plan
       end
 
       def __fo_build_flow__(flow, step_name, group, object)
         public_send(:"build_#{flow}", title: step_name, group: group, object: object)
-      end
-
-      def __fo_run_flow__(plan, on_step, on_failure, on_input, on_flow)
-        step_index = 0
-        plan.call do |object, id|
-          on_input.call(object) if on_input && id.group == :input
-          on_flow.call(object) if step_index == 1 && on_flow && id.group == :stage
-          on_step.call(object, id)
-          step_index += 1
-          if halt_flow?(object, id)
-            on_failure.call(object, id)
-            throw :halt
-          end
-          after_input_check.call(object) if after_input_check && id.group == :input
-        end
       end
 
       def __fo_wrap_input__
@@ -134,33 +99,33 @@ module FlowObject
         public_send(:"new_#{self.out}_output_instance")
       end
 
-      def __fo_resolve_cascade__(cascade, step, failure)
-        new(cascade).tap do |flow|
-          if failure
-            __fo_notify_error__(flow, step)
+      def __fo_resolve__(runner)
+        new(runner.flow).tap do |handler|
+          if runner.failure
+            __fo_notify_error__(handler, runner.step_name)
           else
-            __fo_notify_success__(flow)
+            __fo_notify_success__(handler)
           end
         end
       end
 
-      def __fo_notify_error__(flow, step)
-        if flow.output.respond_to?(:"on_#{step}_failure")
-          flow.output.public_send(:"on_#{step}_failure", flow.given)
-        elsif flow.output.respond_to?(:on_failure)
-          flow.output.on_failure(flow.given, step)
-        elsif flow.respond_to?(:"on_#{step}_failure")
-          flow.public_send(:"on_#{step}_failure")
+      def __fo_notify_error__(handler, step)
+        if handler.output.respond_to?(:"on_#{step}_failure")
+          handler.output.public_send(:"on_#{step}_failure", handler.flow)
+        elsif handler.output.respond_to?(:on_failure)
+          handler.output.on_failure(handler.flow, step)
+        elsif handler.respond_to?(:"on_#{step}_failure")
+          handler.public_send(:"on_#{step}_failure")
         else
-          flow.on_failure(step)
+          handler.on_failure(step)
         end
       end
 
-      def __fo_notify_success__(flow)
-        if flow.output.respond_to?(:on_success)
-          flow.output.on_success(flow.given)
+      def __fo_notify_success__(handler)
+        if handler.output.respond_to?(:on_success)
+          handler.output.on_success(handler.flow)
         else
-          flow.on_success
+          handler.on_success
         end
       end
     end

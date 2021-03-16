@@ -41,7 +41,7 @@ RSpec.describe FlowObject do
       child_class = Class.new(operation_class)
       operation = child_class.accept(value).call
       expect(i).to eq 13
-      expect(operation.given.val).to eq 9
+      expect(operation.flow.val).to eq 9
     end
 
     it 'inherits proprties of superclass' do
