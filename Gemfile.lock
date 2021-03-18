@@ -1,7 +1,7 @@
 PATH
   remote: .
   specs:
-    flow_object (0.2.0)
+    flow_object (0.2.1)
       mature_factory (~> 0.2.14)
 
 GEM
