@@ -12,11 +12,11 @@ module FlowObject
         :after_input_check, :after_flow_check, :after_output_initialize
     end
 
-    attr_reader :output, :flow
+    attr_reader :output
 
-    def initialize(flow)
-      @flow = flow
+    def initialize(flow, step_name = :flow)
       @output = self.class.send(:__fo_wrap_output__)
+      self.class.link_with_delegation(@output, flow, step_name, true)
       self.class.after_output_initialize.call(@output)
     end
 
@@ -67,6 +67,11 @@ module FlowObject
         wrap(name, delegate: true, &block)
       end
 
+      def link_with_delegation(target, object, accessor, delegate)
+        MatureFactory::Features::Assemble::AbstractBuilder
+          .link_with_delegation(target, object, accessor, delegate)
+      end
+
       private
 
       def halt_flow?(object, id)
@@ -100,7 +105,7 @@ module FlowObject
       end
 
       def __fo_resolve__(runner)
-        new(runner.flow).tap do |handler|
+        new(runner.flow, runner.step_name).tap do |handler|
           if runner.failure
             __fo_notify_error__(handler, runner.step_name)
           else
@@ -111,9 +116,9 @@ module FlowObject
 
       def __fo_notify_error__(handler, step)
         if handler.output.respond_to?(:"on_#{step}_failure")
-          handler.output.public_send(:"on_#{step}_failure", handler.flow)
+          handler.output.public_send(:"on_#{step}_failure")
         elsif handler.output.respond_to?(:on_failure)
-          handler.output.on_failure(handler.flow, step)
+          handler.output.on_failure(step)
         elsif handler.respond_to?(:"on_#{step}_failure")
           handler.public_send(:"on_#{step}_failure")
         else
@@ -123,7 +128,7 @@ module FlowObject
 
       def __fo_notify_success__(handler)
         if handler.output.respond_to?(:on_success)
-          handler.output.on_success(handler.flow)
+          handler.output.on_success
         else
           handler.on_success
         end

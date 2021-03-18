@@ -41,19 +41,20 @@ RSpec.describe FlowObject::Base do
               def valid?; true; end
             end
             json_output do
-              def on_success(output)
-                self.string = "#{output.a}#{output.o}#{output.u}#{output.e}y#{output.i}#{output.id}"
+              attr_accessor :string
+              def on_success
+                self.string = "#{a}#{o}#{u}#{e}y#{i}#{id}"
               end
             end
             rake_output do
-              def on_success(output)
+              def on_success
                 self.obj = {
-                  a: output.a,
-                  o: output.o,
-                  u: output.u,
-                  e: output.e,
-                  i: output.i,
-                  id: output.id
+                  a: a,
+                  o: o,
+                  u: u,
+                  e: e,
+                  i: i,
+                  id: id
                 }
               end
             end
@@ -123,14 +124,14 @@ RSpec.describe FlowObject::Base do
             end
             json_output do
               attr_accessor :error, :step
-              def on_authorize_failure(output)
-                self.error = output.errors.join
+              def on_authorize_failure
+                self.error = errors.join
                 self.step = :authorize_stage
               end
             end
             rake_output do
-              def on_failure(given, step)
-                self.error = given.errors.join
+              def on_failure(step)
+                self.error = errors.join
               end
             end
 
@@ -189,14 +190,14 @@ RSpec.describe FlowObject::Base do
             end
             json_output do
               attr_accessor :error, :step
-              def on_mash_failure(output)
-                self.error = output.errors.join
+              def on_mash_failure
+                self.error = errors.join
                 self.step = :mash_input
               end
             end
             rake_output do
-              def on_failure(given, step)
-                self.error = given.errors.join
+              def on_failure(step)
+                self.error = errors.join
               end
             end
 

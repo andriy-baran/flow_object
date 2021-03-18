@@ -33,11 +33,12 @@ RSpec.describe FlowObject::Base do
             end
 
             rake_output do
-              def on_success(output)
+              attr_accessor :obj
+              def on_success
                 self.obj = {
-                  a: output.a,
-                  o: output.o,
-                  id: output.id
+                  a: a,
+                  o: o,
+                  id: id
                 }
               end
             end

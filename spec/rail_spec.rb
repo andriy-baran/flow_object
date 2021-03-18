@@ -40,14 +40,16 @@ RSpec.describe FlowObject::Base do
               attr_accessor :str
             end
             def on_success
-              output.str = "#{flow.a}#{flow.o}#{flow.u}#{flow.e}y#{flow.i}#{flow.id}"
+              def output.str
+                "#{a}#{o}#{u}#{e}y#{i}#{id}"
+              end
             end
           end
         end
         value { { id: 3 } }
       end
 
-      it 'flow has access to all nested methods' do
+      it 'has access to all nested methods' do
         operation = operation_class.accept(value).call
         expect(operation.output.str).to eq('aoueyi3')
       end
@@ -91,10 +93,9 @@ RSpec.describe FlowObject::Base do
               def i; 'i'; end
             end
             json_output do
-              attr_accessor :step, :errors
+              attr_accessor :step
             end
             def on_failure(step)
-              output.errors = flow.errors
               output.step = step
             end
           end
@@ -102,7 +103,7 @@ RSpec.describe FlowObject::Base do
         value { { id: 3 } }
       end
 
-      it 'flow has errors' do
+      it 'has errors' do
         operation = operation_class.accept(value).call
         expect(operation.output.errors).to_not be_empty
       end
