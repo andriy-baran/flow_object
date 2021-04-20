@@ -1,3 +1,8 @@
+class MashClass < OpenStruct; end
+class RakeClass; end
+class AuthorizeClass; end
+class ProvideClass; end
+
 RSpec.describe FlowObject do
   it "has a version number" do
     expect(FlowObject::VERSION).not_to be nil
@@ -9,12 +14,12 @@ RSpec.describe FlowObject do
         Class.new(FlowObject::Base) do
           from :mash
           to :rake
-          input :mash, base_class: OpenStruct
-          output :rake
+          input :mash, base_class: MashClass
+          output :rake, base_class: RakeClass
 
           flow do
-            stage :authorize
-            stage :provide
+            stage :authorize, base_class: AuthorizeClass
+            stage :provide, base_class: ProvideClass
           end
 
           provide_stage { attr_accessor :val }
@@ -33,15 +38,25 @@ RSpec.describe FlowObject do
 
     it 'has callbacks' do
       i = 1
-      operation_class.after_input_initialize {|o| i += o.id }
-      operation_class.after_flow_initialize {|o| i += 3 }
-      operation_class.after_input_check {|o| i += 1 }
-      operation_class.after_flow_check {|o| o.val = i += 1 }
-      operation_class.after_output_initialize {|o| i += 4 }
+      mash = nil
+      mash_ac = nil
+      authorize = nil
+      provide = nil
+      rake = nil
+      operation_class.after_input_initialize {|o| mash = o; i += o.id }
+      operation_class.after_flow_initialize {|o| authorize = o; i += 3 }
+      operation_class.after_input_check {|o| mash_ac = o; i += 1 }
+      operation_class.after_flow_check {|o| provide = o; o.val = i += 1 }
+      operation_class.after_output_initialize {|o| rake = o; i += 4 }
       child_class = Class.new(operation_class)
       operation = child_class.accept(value).call
       expect(i).to eq 13
       expect(operation.output.val).to eq 9
+      expect(mash).to be_a(MashClass)
+      expect(authorize).to be_a(AuthorizeClass)
+      expect(mash_ac).to be_a(MashClass)
+      expect(provide).to be_a(ProvideClass)
+      expect(rake).to be_a(RakeClass)
     end
 
     it 'inherits proprties of superclass' do

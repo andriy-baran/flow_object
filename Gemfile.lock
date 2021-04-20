@@ -1,8 +1,8 @@
 PATH
   remote: .
   specs:
-    flow_object (0.2.1)
-      mature_factory (~> 0.2.14)
+    flow_object (0.2.2)
+      mature_factory (~> 0.2.15)
 
 GEM
   remote: https://rubygems.org/
@@ -10,9 +10,8 @@ GEM
     coderay (1.1.3)
     diff-lcs (1.4.4)
     dry-inflector (0.1.2)
-    mature_factory (0.2.14)
+    mature_factory (0.2.15)
       dry-inflector (~> 0.1)
-      simple_facade (~> 0.2)
     method_source (1.0.0)
     pry (0.13.1)
       coderay (~> 1.1)
@@ -33,7 +32,6 @@ GEM
     rspec-support (3.9.3)
     rspec_vars_helper (0.1.0)
       rspec (>= 2.4)
-    simple_facade (0.2.1)
 
 PLATFORMS
   ruby
