@@ -20,6 +20,10 @@ module FlowObject
       self.class.after_output_initialize.call(@output)
     end
 
+    def on_exception(exception = nil)
+      # NOOP
+    end
+
     def on_failure(failed_step = nil)
       # NOOP
     end
@@ -64,7 +68,7 @@ module FlowObject
       end
 
       def flow(name = :main, &block)
-        wrap(name, delegate: true, &block)
+        wrap(name, delegate: true, on_exception: :halt, &block)
       end
 
       def link_with_delegation(target, object, accessor, delegate)
@@ -105,13 +109,29 @@ module FlowObject
       end
 
       def __fo_resolve__(runner)
-        new(runner.flow, runner.step_name).tap do |handler|
-          if runner.failure
+        new(runner.flow.public_send(runner.step_name), runner.step_name).tap do |handler|
+          if runner.flow.exceptional?
+            __fo_notify_exception__(handler, runner.flow.exception)
+          elsif runner.failure
             __fo_notify_error__(handler, runner.step_name)
           else
             __fo_notify_success__(handler)
           end
         end
+      end
+
+      def __fo_notify_exception__(handler, exception)
+        step = exception.step_id.title
+        if handler.output.respond_to?(:"on_#{step}_exception")
+          handler.output.public_send(:"on_#{step}_exception", exception)
+        elsif handler.output.respond_to?(:on_exception)
+          handler.output.on_exception(exception)
+        elsif handler.respond_to?(:"on_#{step}_exception")
+          handler.public_send(:"on_#{step}_exception", exception)
+        else
+          handler.on_exception(exception)
+        end
+        __fo_notify_error__(handler, exception.step_id.title)
       end
 
       def __fo_notify_error__(handler, step)

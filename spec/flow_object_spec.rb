@@ -28,8 +28,8 @@ RSpec.describe FlowObject do
             attr_accessor :context
           end
 
-          def on_sucess
-            output.context = given
+          def on_success
+            output.context = ''
           end
         end
       end
@@ -49,9 +49,9 @@ RSpec.describe FlowObject do
       operation_class.after_flow_check {|o| provide = o; o.val = i += 1 }
       operation_class.after_output_initialize {|o| rake = o; i += 4 }
       child_class = Class.new(operation_class)
-      operation = child_class.accept(value).call
+      handler = child_class.accept(value).call
       expect(i).to eq 13
-      expect(operation.output.val).to eq 9
+      expect(handler.output.val).to eq 9
       expect(mash).to be_a(MashClass)
       expect(authorize).to be_a(AuthorizeClass)
       expect(mash_ac).to be_a(MashClass)
@@ -68,6 +68,54 @@ RSpec.describe FlowObject do
       expect(child_class.main_wrapped_struct_class).to eq operation_class.main_wrapped_struct_class
       expect(operation.output).to be_a operation_class.rake_output_class
       expect(operation.output).to be_a child_class.rake_output_class
+    end
+  end
+
+  describe "error handling" do
+    vars do
+      operation_class do
+        Class.new(FlowObject::Base) do
+          from :mash
+          to :rake
+          input :mash, base_class: MashClass
+          output :rake, base_class: RakeClass
+
+          flow do
+            stage :authorize, base_class: AuthorizeClass
+            stage :provide, base_class: ProvideClass
+          end
+
+          provide_stage do
+            attr_accessor :val
+
+            def initialize
+              raise 'No way'
+            end
+          end
+
+          rake_output do
+            attr_accessor :context
+          end
+
+          def on_success
+            output.context = ''
+          end
+
+          def on_exception(exception)
+            output.context = exception.step_id.to_s
+          end
+        end
+      end
+      value { { id: 3 } }
+    end
+
+    it 'raises proper error' do
+      child_class = Class.new(operation_class)
+      operation = child_class.accept(value).call
+      expect(operation.output).to respond_to(:mash)
+      expect(operation.output).to respond_to(:authorize)
+      expect(operation.output).to_not respond_to(:provide)
+      expect(operation.output.context).to eq 'provide_stage'
     end
   end
 end
