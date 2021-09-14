@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe FlowObject::Base do
@@ -9,7 +11,9 @@ RSpec.describe FlowObject::Base do
             from :mash
             to :rake
 
-            input :array, base_class: OpenStruct, init: ->(klass, value, n1, n2) { klass.new(value.merge(pass: n1, log: n2)) }
+            input :array, base_class: OpenStruct, init: lambda { |klass, value, n1, n2|
+                                                          klass.new(value.merge(pass: n1, log: n2))
+                                                        }
             input :mash, base_class: Struct.new(:id), init: ->(klass, value) { klass.new(value) }
             output :rake, base_class: OpenStruct
             output :json, base_class: OpenStruct
@@ -19,21 +23,34 @@ RSpec.describe FlowObject::Base do
             end
 
             array_input do
-              def z; 'z'; end
+              def z
+                'z'
+              end
             end
 
             mash_input do
-              def a; 'a'; end
-              def valid?; true; end
+              def a
+                'a'
+              end
+
+              def valid?
+                true
+              end
             end
 
             authorize_stage do
-              def o; 'o'; end
-              def valid?; true; end
+              def o
+                'o'
+              end
+
+              def valid?
+                true
+              end
             end
 
             rake_output do
               attr_accessor :obj
+
               def on_success
                 self.obj = {
                   a: a,

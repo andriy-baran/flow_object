@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module FlowObject
+  # Triggers flow execution and users callbacks
   class Runner
     attr_reader :step_name, :failure, :flow, :callbacks
 

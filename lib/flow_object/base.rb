@@ -1,6 +1,7 @@
 # frozen_string_literal: true
 
 module FlowObject
+  # Provides DSL for flows definitions
   class Base
     include Hospodar
     include Hospodar::Builder
@@ -35,6 +36,7 @@ module FlowObject
       # NOOP
     end
 
+    # Class-level interface for flow objects
     module ClassMethods
       def inherited(subclass)
         super
@@ -118,17 +120,16 @@ module FlowObject
       end
 
       def fo_notify_exception(handler, exception)
-        step = exception.step_id.title
-        if handler.output.respond_to?(:"on_#{step}_exception")
-          handler.output.public_send(:"on_#{step}_exception", exception)
+        callback = :"on_#{exception.step_id.title}_exception"
+        if handler.output.respond_to?(callback)
+          handler.output.public_send(callback, exception)
         elsif handler.output.respond_to?(:on_exception)
           handler.output.on_exception(exception)
-        elsif handler.respond_to?(:"on_#{step}_exception")
-          handler.public_send(:"on_#{step}_exception", exception)
+        elsif handler.respond_to?(callback)
+          handler.public_send(callback, exception)
         else
           handler.on_exception(exception)
         end
-        fo_notify_error(handler, exception.step_id.title)
       end
 
       def fo_notify_error(handler, step)

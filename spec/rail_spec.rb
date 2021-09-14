@@ -1,3 +1,5 @@
+# frozen_string_literal: true
+
 require 'spec_helper'
 
 RSpec.describe FlowObject::Base do
@@ -17,24 +19,49 @@ RSpec.describe FlowObject::Base do
               output :json
             end
             mash_input do
-              def a; 'a'; end
-              def valid?; true; end
+              def a
+                'a'
+              end
+
+              def valid?
+                true
+              end
             end
             authorize_stage do
-              def o; 'o'; end
-              def valid?; true; end
+              def o
+                'o'
+              end
+
+              def valid?
+                true
+              end
             end
             sync_stage do
-              def u; 'u'; end
-              def valid?; true; end
+              def u
+                'u'
+              end
+
+              def valid?
+                true
+              end
             end
             store_stage do
-              def e; 'e'; end
-              def valid?; true; end
+              def e
+                'e'
+              end
+
+              def valid?
+                true
+              end
             end
             formatter_stage do
-              def i; 'i'; end
-              def valid?; true; end
+              def i
+                'i'
+              end
+
+              def valid?
+                true
+              end
             end
             json_output do
               attr_accessor :str
@@ -69,28 +96,45 @@ RSpec.describe FlowObject::Base do
               stage :formatter, base_class: Class.new(Object)
               output :json
             end
-            def self.halt_flow?(object, id)
+            def self.halt_flow?(object, _id)
               !object.valid?
             end
             mash_input do
-              def a; 'a'; end
-              def valid?; true; end
+              def a
+                'a'
+              end
+
+              def valid?
+                true
+              end
             end
             authorize_stage do
-              def o; 'o'; end
-              def valid?; false; end
+              def o
+                'o'
+              end
+
+              def valid?
+                false
+              end
+
               def errors
                 ['error']
               end
             end
             sync_stage do
-              def u; 'u'; end
+              def u
+                'u'
+              end
             end
             store_stage do
-              def e; 'e'; end
+              def e
+                'e'
+              end
             end
             formatter_stage do
-              def i; 'i'; end
+              def i
+                'i'
+              end
             end
             json_output do
               attr_accessor :step
