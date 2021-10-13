@@ -1,23 +1,26 @@
+# frozen_string_literal: true
+
 module FlowObject
   class Base
-    include MatureFactory
-    include MatureFactory::Features::Assemble
+    include MotherShip
+    include MotherShip::Builder
 
     produces :stages, :inputs, :outputs
 
     class << self
-      extend Forwardable
       attr_reader :in, :out, :initial_values
-      def_delegators :callbacks, :after_input_initialize, :after_flow_initialize,
-        :after_input_check, :after_flow_check, :after_output_initialize
     end
 
-    attr_reader :output
+    extend Forwardable
+    def_delegators :callbacks, :output_initialized
 
-    def initialize(flow, step_name = :flow)
-      @output = self.class.send(:__fo_wrap_output__)
-      self.class.link_with_delegation(@output, flow, step_name, true)
-      self.class.after_output_initialize.call(@output)
+    attr_reader :output, :callbacks
+
+    def initialize(flow, callbacks, step_name = :flow)
+      @output = self.class.send(:fo_wrap_output)
+      @callbacks = callbacks
+      MotherShip::Builder.def_accessor(step_name, on: @output, to: flow, delegate: true)
+      output_initialized.call(@output)
     end
 
     def on_exception(exception = nil)
@@ -36,16 +39,7 @@ module FlowObject
       def inherited(subclass)
         super
         subclass.from(self.in)
-        subclass.to(self.out)
-        subclass.after_input_initialize(&self.after_input_initialize)
-        subclass.after_flow_initialize(&self.after_flow_initialize)
-        subclass.after_input_check(&self.after_input_check)
-        subclass.after_flow_check(&self.after_flow_check)
-        subclass.after_output_initialize(&self.after_output_initialize)
-      end
-
-      def callbacks
-        @callbacks ||= Callbacks.new
+        subclass.to(out)
       end
 
       def from(input)
@@ -63,64 +57,67 @@ module FlowObject
         self
       end
 
-      def call(flow: :main)
-        __fo_resolve__(__fo_process__(flow: flow))
+      def call(flow: :main, &block)
+        fo_resolve(fo_process(flow: flow, &block))
       end
 
       def flow(name = :main, &block)
         wrap(name, delegate: true, on_exception: :halt, &block)
       end
 
-      def link_with_delegation(target, object, accessor, delegate)
-        MatureFactory::Features::Assemble::AbstractBuilder
-          .link_with_delegation(target, object, accessor, delegate)
-      end
-
       private
 
-      def halt_flow?(object, id)
+      def halt_flow?(_object, _id)
         false
       end
 
-      def __fo_process__(flow: :main)
-        plan    = __fo_build_flow__(flow, self.in, :input, __fo_wrap_input__)
+      def fo_process(flow: :main, &block)
+        plan = fo_build_flow(flow, self.in, :input, fo_wrap_input)
+        callbacks = Callbacks.new(@callbacks_allowlist)
+        block.call(callbacks) if block_given?
         Runner.new(plan, callbacks, method(:halt_flow?)).execute_plan
       end
 
-      def __fo_build_flow__(flow, step_name, group, object)
-        public_send(:"build_#{flow}", title: step_name, group: group, object: object)
+      def fo_build_flow(flow, step_name, group, object)
+        plan = send(:"mother_ship_perform_planing_for_#{flow}", object, step_name, group)
+        @callbacks_allowlist = plan.map(&:last).map(&:to_sym) + [:"#{out}_output"]
+        send(:"mother_ship_execute_plan_for_#{flow}", plan)
       end
 
-      def __fo_wrap_input__
+      def fo_wrap_input
         return initial_values if self.in.nil?
+
         input_class = public_send(:"#{self.in}_input_class")
         return initial_values if input_class.nil?
+
         public_send(:"new_#{self.in}_input_instance", *initial_values)
       end
 
-      def __fo_wrap_output__
+      def fo_wrap_output
         # rescue NoMethodError => ex
         # "You have not define output class. Please add `output :#{self.out}`"
-        return if self.out.nil?
-        return unless self.respond_to?(:"#{self.out}_output_class")
-        output_class = public_send(:"#{self.out}_output_class")
+        return if out.nil?
+        return unless respond_to?(:"#{out}_output_class")
+
+        output_class = public_send(:"#{out}_output_class")
         return if output_class.nil?
-        public_send(:"new_#{self.out}_output_instance")
+
+        public_send(:"new_#{out}_output_instance")
       end
 
-      def __fo_resolve__(runner)
-        new(runner.flow.public_send(runner.step_name), runner.step_name).tap do |handler|
+      def fo_resolve(runner)
+        new(runner.flow.public_send(runner.step_name), runner.callbacks, runner.step_name).tap do |handler|
           if runner.flow.exceptional?
-            __fo_notify_exception__(handler, runner.flow.exception)
+            fo_notify_exception(handler, runner.flow.exception)
           elsif runner.failure
-            __fo_notify_error__(handler, runner.step_name)
+            fo_notify_error(handler, runner.step_name)
           else
-            __fo_notify_success__(handler)
+            fo_notify_success(handler)
           end
         end
       end
 
-      def __fo_notify_exception__(handler, exception)
+      def fo_notify_exception(handler, exception)
         step = exception.step_id.title
         if handler.output.respond_to?(:"on_#{step}_exception")
           handler.output.public_send(:"on_#{step}_exception", exception)
@@ -131,10 +128,10 @@ module FlowObject
         else
           handler.on_exception(exception)
         end
-        __fo_notify_error__(handler, exception.step_id.title)
+        fo_notify_error(handler, exception.step_id.title)
       end
 
-      def __fo_notify_error__(handler, step)
+      def fo_notify_error(handler, step)
         if handler.output.respond_to?(:"on_#{step}_failure")
           handler.output.public_send(:"on_#{step}_failure")
         elsif handler.output.respond_to?(:on_failure)
@@ -146,7 +143,7 @@ module FlowObject
         end
       end
 
-      def __fo_notify_success__(handler)
+      def fo_notify_success(handler)
         if handler.output.respond_to?(:on_success)
           handler.output.on_success
         else

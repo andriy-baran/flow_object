@@ -1,10 +1,15 @@
+# frozen_string_literal: true
+
 class MashClass < OpenStruct; end
+
 class RakeClass; end
+
 class AuthorizeClass; end
+
 class ProvideClass; end
 
 RSpec.describe FlowObject do
-  it "has a version number" do
+  it 'has a version number' do
     expect(FlowObject::VERSION).not_to be nil
   end
 
@@ -43,13 +48,14 @@ RSpec.describe FlowObject do
       authorize = nil
       provide = nil
       rake = nil
-      operation_class.after_input_initialize {|o| mash = o; i += o.id }
-      operation_class.after_flow_initialize {|o| authorize = o; i += 3 }
-      operation_class.after_input_check {|o| mash_ac = o; i += 1 }
-      operation_class.after_flow_check {|o| provide = o; o.val = i += 1 }
-      operation_class.after_output_initialize {|o| rake = o; i += 4 }
       child_class = Class.new(operation_class)
-      handler = child_class.accept(value).call
+      handler = child_class.accept(value).call do |callbacks|
+        callbacks.mash_input_initialized { |o| mash = o; p i += o.id } # 1 + 3 = 4
+        callbacks.authorize_stage_initialized { |o| authorize = o; p i += 3 } # 5 + 3 = 8
+        callbacks.mash_input_checked { |o| mash_ac = o; p i += 1 } # 4 + 1 = 5
+        callbacks.provide_stage_checked { |o| provide = o; p o.val = i += 1 } # 8 + 1 = 9
+        callbacks.rake_output_initialized { |o| rake = o; p i += 4 } # 9 + 4 = 13
+      end
       expect(i).to eq 13
       expect(handler.output.val).to eq 9
       expect(mash).to be_a(MashClass)
@@ -71,7 +77,7 @@ RSpec.describe FlowObject do
     end
   end
 
-  describe "error handling" do
+  describe 'error handling' do
     vars do
       operation_class do
         Class.new(FlowObject::Base) do
