@@ -13,6 +13,7 @@ Gem::Specification.new do |spec|
   spec.description   = %q{General purpose software library designed for happiness}
   spec.homepage      = 'https://github.com/andriy-baran/flow_object'
   spec.license       = 'MIT'
+  spec.required_ruby_version = '>= 2.4.0'
 
   # Prevent pushing this gem to RubyGems.org. To allow pushes either set the 'allowed_push_host'
   # to allow pushing to a single host or delete this section to allow pushing to any host.
@@ -36,7 +37,7 @@ Gem::Specification.new do |spec|
   spec.executables   = spec.files.grep(%r{^exe/}) { |f| File.basename(f) }
   spec.require_paths = ['lib']
 
-  spec.add_dependency 'mature_factory', '~> 0.2.17'
+  spec.add_dependency 'hospodar', '~> 1'
 
   spec.add_development_dependency 'bundler', '~> 1.17'
   spec.add_development_dependency 'pry'

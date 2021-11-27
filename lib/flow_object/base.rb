@@ -2,8 +2,8 @@
 
 module FlowObject
   class Base
-    include MotherShip
-    include MotherShip::Builder
+    include Hospodar
+    include Hospodar::Builder
 
     produces :stages, :inputs, :outputs
 
@@ -19,7 +19,7 @@ module FlowObject
     def initialize(flow, callbacks, step_name = :flow)
       @output = self.class.send(:fo_wrap_output)
       @callbacks = callbacks
-      MotherShip::Builder.def_accessor(step_name, on: @output, to: flow, delegate: true)
+      Hospodar::Builder.def_accessor(step_name, on: @output, to: flow, delegate: true)
       output_initialized.call(@output)
     end
 
@@ -79,9 +79,9 @@ module FlowObject
       end
 
       def fo_build_flow(flow, step_name, group, object)
-        plan = send(:"mother_ship_perform_planing_for_#{flow}", object, step_name, group)
+        plan = send(:"hospodar_perform_planing_for_#{flow}", object, step_name, group)
         @callbacks_allowlist = plan.map(&:last).map(&:to_sym) + [:"#{out}_output"]
-        send(:"mother_ship_execute_plan_for_#{flow}", plan)
+        send(:"hospodar_execute_plan_for_#{flow}", plan)
       end
 
       def fo_wrap_input
