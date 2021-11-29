@@ -76,7 +76,7 @@ RSpec.describe FlowObject::Base do
       end
 
       it 'calls on_success of :rake result' do
-        operation = operation_class.accept(value).call
+        operation = operation_class.call(input: value)
         expect(operation.output.obj).to eq rake_result
       end
     end

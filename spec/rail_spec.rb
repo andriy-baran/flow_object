@@ -77,7 +77,7 @@ RSpec.describe FlowObject::Base do
       end
 
       it 'has access to all nested methods' do
-        operation = operation_class.accept(value).call
+        operation = operation_class.call(input: value)
         expect(operation.output.str).to eq('aoueyi3')
       end
     end
@@ -148,7 +148,7 @@ RSpec.describe FlowObject::Base do
       end
 
       it 'has errors' do
-        operation = operation_class.accept(value).call
+        operation = operation_class.call(input: value)
         expect(operation.output.errors).to_not be_empty
       end
     end

@@ -9,7 +9,7 @@ module FlowObject
     produces :stages, :inputs, :outputs
 
     class << self
-      attr_reader :in, :out, :initial_values
+      attr_reader :in, :out
     end
 
     extend Forwardable
@@ -54,13 +54,8 @@ module FlowObject
         self
       end
 
-      def accept(*values)
-        @initial_values = values
-        self
-      end
-
-      def call(flow: :main, &block)
-        fo_resolve(fo_process(flow: flow, &block))
+      def call(input:, flow: :main, &block)
+        fo_resolve(fo_process(input, flow: flow, &block))
       end
 
       def flow(name = :main, &block)
@@ -73,8 +68,8 @@ module FlowObject
         false
       end
 
-      def fo_process(flow: :main, &block)
-        plan = fo_build_flow(flow, self.in, :input, fo_wrap_input)
+      def fo_process(input, flow: :main, &block)
+        plan = fo_build_flow(flow, self.in, :input, fo_wrap_input(input))
         callbacks = Callbacks.new(@callbacks_allowlist)
         block.call(callbacks) if block_given?
         Runner.new(plan, callbacks, method(:halt_flow?)).execute_plan
@@ -86,7 +81,7 @@ module FlowObject
         send(:"hospodar_execute_plan_for_#{flow}", plan)
       end
 
-      def fo_wrap_input
+      def fo_wrap_input(*initial_values)
         return initial_values if self.in.nil?
 
         input_class = public_send(:"#{self.in}_input_class")

@@ -106,7 +106,7 @@ RSpec.describe FlowObject::Base do
       end
 
       it 'calls on_success of :json output' do
-        operation = operation_class.accept(value).call
+        operation = operation_class.call(input: value)
         expect(operation.output.string).to eq('aoueyi3')
       end
     end
@@ -189,7 +189,7 @@ RSpec.describe FlowObject::Base do
       end
 
       it 'calls on_authorize_failure of :json output' do
-        operation = operation_class.accept(value).call
+        operation = operation_class.call(input: value)
         expect(operation.output).to have_attributes(step: :authorize_stage, error: 'Error with id=3')
       end
     end
@@ -272,7 +272,7 @@ RSpec.describe FlowObject::Base do
       end
 
       it 'calls on_authorize_failure of :json output' do
-        operation = operation_class.accept(value).call
+        operation = operation_class.call(input: value)
         expect(operation.output).to have_attributes(step: :mash_input, error: 'Error with id=3')
       end
     end
